@@ -104,7 +104,7 @@ async function testSMTP(config) {
         smtpPort,
         useSSL,
         requireAuth,
-        username: requireAuth ? "***" : "未使用认证",
+        username: requireAuth ? username : "未使用认证",  // 不再隐藏用户名
         fromEmail,
         fromName: fromName || "未指定",
         toEmail,
@@ -132,7 +132,7 @@ async function testSMTP(config) {
         smtpPort,
         useSSL,
         requireAuth,
-        username: requireAuth ? "***" : "未使用认证",
+        username: requireAuth ? username : "未使用认证",  // 不再隐藏用户名
         fromEmail,
         fromName: fromName || "未指定",
         toEmail,
