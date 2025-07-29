@@ -14,7 +14,9 @@ async function testSMTP(config) {
     username, 
     password, 
     fromEmail, 
+    fromName,
     toEmail, 
+    debugLevel,
     subject, 
     body 
   } = config;
@@ -42,16 +44,37 @@ async function testSMTP(config) {
     smtpConfig.requireTLS = true;
   }
 
+  // 添加调试信息支持
+  if (debugLevel > 0) {
+    smtpConfig.debug = true;
+    smtpConfig.logger = true;
+  }
+
   let transporter;
+  let debugLog = [];
+  
   try {
     transporter = nodemailer.createTransporter(smtpConfig);
+    
+    // 收集调试信息
+    if (debugLevel > 0) {
+      transporter.on('log', info => {
+        if (debugLevel >= 2) {
+          debugLog.push(`[LOG] ${info.message}`);
+        }
+      });
+      
+      transporter.on('error', error => {
+        debugLog.push(`[ERROR] ${error.message}`);
+      });
+    }
     
     // 验证连接配置
     await transporter.verify();
     
     // 发送测试邮件
     const mailOptions = {
-      from: fromEmail,
+      from: fromName ? `"${fromName}" <${fromEmail}>` : fromEmail,
       to: toEmail,
       subject: subject,
       text: body
@@ -69,13 +92,16 @@ async function testSMTP(config) {
         requireAuth,
         username: requireAuth ? "***" : "未使用认证",
         fromEmail,
+        fromName: fromName || "未指定",
         toEmail,
+        debugLevel,
         subject
       },
       response: {
         messageId: info.messageId,
         response: info.response
       },
+      debug: debugLevel > 0 ? debugLog : undefined,
       timestamp: new Date().toISOString()
     };
   } catch (error) {
@@ -94,9 +120,12 @@ async function testSMTP(config) {
         requireAuth,
         username: requireAuth ? "***" : "未使用认证",
         fromEmail,
+        fromName: fromName || "未指定",
         toEmail,
+        debugLevel,
         subject
       },
+      debug: debugLevel > 0 ? debugLog : undefined,
       timestamp: new Date().toISOString()
     };
   } finally {
