@@ -54,7 +54,7 @@ async function testSMTP(config) {
   let debugLog = [];
   
   try {
-    transporter = nodemailer.createTransporter(smtpConfig);
+    transporter = nodemailer.createTransport(smtpConfig);
     
     // 收集调试信息
     if (debugLevel > 0) {
