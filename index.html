@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP 服务器测试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+
+        .result.success {
+            border-left-color: #27ae60;
+            background-color: #f8fff9;
+        }
+
+        .result.error {
+            border-left-color: #e74c3c;
+            background-color: #fff8f8;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        #loading p {
+            margin: 0;
+            font-size: 18px;
+            color: #3498db;
+        }
+
+        .spinner {
+            border: 4px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .auth-toggle {
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-toggle input {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .auth-required {
+            display: none;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SMTP 服务器测试工具</h1>
+        <p>使用此工具测试 SMTP 服务器连接和功能</p>
+        
+        <form id="smtpForm">
+            <div class="form-group">
+                <label for="smtpHost">SMTP 服务器:</label>
+                <input type="text" id="smtpHost" required placeholder="例如: smtp.gmail.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="smtpPort">端口:</label>
+                <input type="number" id="smtpPort" required placeholder="例如: 587" value="587" min="1" max="65535">
+            </div>
+            
+            <div class="form-group">
+                <label for="useSSL">安全连接:</label>
+                <select id="useSSL">
+                    <option value="none">无加密</option>
+                    <option value="tls" selected>STARTTLS</option>
+                    <option value="ssl">SSL/TLS</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <div class="auth-toggle">
+                    <input type="checkbox" id="requireAuth" checked>
+                    <label for="requireAuth">需要身份验证</label>
+                </div>
+            </div>
+            
+            <div id="authFields" class="auth-required">
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" placeholder="SMTP 用户名">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" placeholder="SMTP 密码">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="fromEmail">发件人邮箱:</label>
+                <input type="email" id="fromEmail" required placeholder="例如: sender@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="toEmail">收件人邮箱:</label>
+                <input type="email" id="toEmail" required placeholder="例如: recipient@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="subject">邮件主题:</label>
+                <input type="text" id="subject" placeholder="测试邮件" value="SMTP测试邮件">
+            </div>
+            
+            <div class="form-group">
+                <label for="body">邮件内容:</label>
+                <textarea id="body" rows="5">这是一封用于测试SMTP服务器功能的邮件。</textarea>
+            </div>
+            
+            <button type="submit">测试 SMTP 连接</button>
+        </form>
+        
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+            <p>正在测试中，请稍候...</p>
+        </div>
+        
+        <div id="result" class="result hidden">
+            <h2>测试结果</h2>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        // 认证选项切换
+        document.getElementById('requireAuth').addEventListener('change', function() {
+            const authFields = document.getElementById('authFields');
+            if (this.checked) {
+                authFields.classList.remove('hidden');
+                document.getElementById('username').required = true;
+                document.getElementById('password').required = true;
+            } else {
+                authFields.classList.add('hidden');
+                document.getElementById('username').required = false;
+                document.getElementById('password').required = false;
+            }
+        });
+
+        document.getElementById('smtpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // 显示加载状态
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+            
+            // 收集表单数据
+            const formData = {
+                smtpHost: document.getElementById('smtpHost').value,
+                smtpPort: parseInt(document.getElementById('smtpPort').value),
+                useSSL: document.getElementById('useSSL').value,
+                requireAuth: document.getElementById('requireAuth').checked,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                fromEmail: document.getElementById('fromEmail').value,
+                toEmail: document.getElementById('toEmail').value,
+                subject: document.getElementById('subject').value,
+                body: document.getElementById('body').value
+            };
+            
+            try {
+                const response = await fetch('/api/test-smtp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                document.getElementById('resultContent').textContent = JSON.stringify(result, null, 2);
+                
+                // 根据结果设置样式
+                const resultDiv = document.getElementById('result');
+                resultDiv.classList.remove('success', 'error');
+                if (result.success) {
+                    resultDiv.classList.add('success');
+                } else {
+                    resultDiv.classList.add('error');
+                }
+                
+                resultDiv.classList.remove('hidden');
+            } catch (error) {
+                document.getElementById('resultContent').textContent = '错误: ' + error.message;
+                const resultDiv = document.getElementById('result');
+                resultDiv.classList.remove('success');
+                resultDiv.classList.add('error');
+                resultDiv.classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

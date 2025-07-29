@@ -1,0 +1,50 @@
+{
+  "name": "smtp-tester",
+  "version": "1.0.0",
+  "description": "SMTP服务器测试工具，可部署到Vercel",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "smtp",
+    "vercel",
+    "email",
+    "testing"
+  ],
+  "author": "SMTP Tester",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.7"
+  }
+}
+{
+  "name": "smtp-tester",
+  "version": "1.0.0",
+  "description": "SMTP服务器测试工具，可部署到Cloudflare Workers",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev src",
+    "dev:node": "node server.js",
+    "build": "mkdir -p dist && cp src/index.html dist/ && cp src/style.css dist/"
+  },
+  "keywords": [
+    "smtp",
+    "cloudflare",
+    "workers",
+    "email",
+    "testing"
+  ],
+  "author": "SMTP Tester",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "nodemailer": "^6.9.0"
+  }
+}
