@@ -21,6 +21,9 @@ async function testSMTP(config) {
     body 
   } = config;
 
+  // 存储调试信息
+  let debugLog = [];
+  
   // 根据SSL选项配置连接
   const smtpConfig = {
     host: smtpHost,
@@ -44,30 +47,40 @@ async function testSMTP(config) {
     smtpConfig.requireTLS = true;
   }
 
-  // 添加调试信息支持
+  // 添加调试支持
   if (debugLevel > 0) {
+    smtpConfig.logger = {
+      debug: function(...args) {
+        if (debugLevel >= 3) {
+          debugLog.push("[DEBUG] " + args.join(" "));
+        }
+      },
+      info: function(...args) {
+        if (debugLevel >= 2) {
+          debugLog.push("[INFO] " + args.join(" "));
+        }
+      },
+      warn: function(...args) {
+        if (debugLevel >= 1) {
+          debugLog.push("[WARN] " + args.join(" "));
+        }
+      },
+      error: function(...args) {
+        if (debugLevel >= 1) {
+          debugLog.push("[ERROR] " + args.join(" "));
+        }
+      }
+    };
+    
     smtpConfig.debug = true;
-    smtpConfig.logger = true;
+    smtpConfig.transactionLog = true;
   }
 
   let transporter;
-  let debugLog = [];
   
   try {
+    // 正确使用nodemailer创建transporter
     transporter = nodemailer.createTransport(smtpConfig);
-    
-    // 收集调试信息
-    if (debugLevel > 0) {
-      transporter.on('log', info => {
-        if (debugLevel >= 2) {
-          debugLog.push(`[LOG] ${info.message}`);
-        }
-      });
-      
-      transporter.on('error', error => {
-        debugLog.push(`[ERROR] ${error.message}`);
-      });
-    }
     
     // 验证连接配置
     await transporter.verify();
@@ -77,7 +90,8 @@ async function testSMTP(config) {
       from: fromName ? `"${fromName}" <${fromEmail}>` : fromEmail,
       to: toEmail,
       subject: subject,
-      text: body
+      text: body,
+      html: `<p>${body.replace(/\n/g, '</p><p>')}</p>`
     };
     
     const info = await transporter.sendMail(mailOptions);
